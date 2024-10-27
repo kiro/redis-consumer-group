@@ -69,6 +69,7 @@ func TestRunConsumerGroup(t *testing.T) {
 	unixMilli += 990
 	publishAndAssertProcessed(t, uuid.New().String())
 	ticker <- time.Now()
+	publishAndAssertProcessed(t, uuid.New().String())
 	unixMilli += 10
 	ticker <- time.Now()
 
@@ -83,8 +84,8 @@ INFO Starting consumer with id 62626262-6262-4262-a363-636363636363.
 INFO Processed 0 messages in the last second.
 INFO Processed 2 messages in the last second.
 INFO Processed 3 messages in the last second.
-INFO Processed 2 messages in the last second.
-INFO Processed 2 messages in the last second.
+INFO Processed 4 messages in the last second.
+INFO Processed 3 messages in the last second.
 INFO Clearing consumer group state.
 `, stdout.String())
 
