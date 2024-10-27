@@ -11,18 +11,20 @@ import (
 	"log"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
 
 var (
-	stdout     *bytes.Buffer
-	stderr     *bytes.Buffer
-	rdb        *redis.Client
-	ticker     chan time.Time
-	unixMilli  int64
-	cleanState func() error
-	uuids      = []string{
+	stdout        *bytes.Buffer
+	stderr        *bytes.Buffer
+	rdb           *redis.Client
+	ticker        chan time.Time
+	unixMilliLock sync.Mutex
+	unixMilli     int64
+	cleanState    func() error
+	uuids         = []string{
 		"61616161-6161-4161-a161-616161616161",
 		"62626262-6262-4262-a262-626262626262",
 		"62626262-6262-4262-a363-636363636363",
@@ -56,6 +58,12 @@ func assertConsumerIds(t *testing.T, uuids []string) {
 	assert.Equal(t, uuids, consumerIds)
 }
 
+func addUnixMilli(value int64) {
+	unixMilliLock.Lock()
+	unixMilli += value
+	unixMilliLock.Unlock()
+}
+
 func TestRunConsumerGroup(t *testing.T) {
 	uuid.SetRand(nil)
 	assertConsumerIds(t, uuids)
@@ -63,14 +71,14 @@ func TestRunConsumerGroup(t *testing.T) {
 	publishAndAssertProcessed(t, uuid.New().String())
 	publishAndAssertProcessed(t, uuid.New().String())
 	ticker <- time.Now()
-	unixMilli += 1
+	addUnixMilli(1)
 	publishAndAssertProcessed(t, uuid.New().String())
 	ticker <- time.Now()
-	unixMilli += 990
+	addUnixMilli(990)
 	publishAndAssertProcessed(t, uuid.New().String())
 	ticker <- time.Now()
 	publishAndAssertProcessed(t, uuid.New().String())
-	unixMilli += 10
+	addUnixMilli(10)
 	ticker <- time.Now()
 
 	assertConsumerIds(t, uuids)
@@ -122,8 +130,12 @@ func TestMain(m *testing.M) {
 	ticker = make(chan time.Time)
 	unixMilli = time.Now().UnixMilli()
 	clock := &clock{
-		unixMillis: func() int64 { return unixMilli },
-		newTicker:  func(_ time.Duration) <-chan time.Time { return ticker },
+		unixMillis: func() int64 {
+			unixMilliLock.Lock()
+			defer unixMilliLock.Unlock()
+			return unixMilli
+		},
+		newTicker: func(_ time.Duration) <-chan time.Time { return ticker },
 	}
 
 	// run the consumer group
