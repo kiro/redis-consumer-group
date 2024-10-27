@@ -22,7 +22,8 @@ context is cancelled everything stops.
 
 - consumer_group_test.go and ids_test.go has functional test using miniredis and mocking out time, logs, etc.
 There is a unit test for counter_test.go . To run tests in the root folder of the project
-``` go test ./...
+``` 
+go test ./...
  ```
 
 To test if the increasing the consumers increases the throughput I changed the publisher to send 80K msg in a batch and
