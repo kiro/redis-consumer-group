@@ -39,9 +39,11 @@ run a bit longer. The results look like
 Executable for the consumer group, has flags --redis-addr by default localhost:6379 and --consumers by default 3 . It
 catches when the binary is interrupted with ctrl+C and clears the consumerIds in redis.
 
-To build and run the binary, in the root folder of the project
+To get the project and run the binary
 
 ```
+git clone https://github.com/kiro/redis-consumer-group
+cd redis-consumer-group
 go build ./cmd/redis-consumer-group
 ./redis-consumer-group --consumers=4
 ```
