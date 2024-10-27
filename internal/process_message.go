@@ -17,7 +17,7 @@ func ProcessMessage(ctx context.Context, rdb *redis.Client, consumerId string, m
 
 	err = rdb.XAdd(ctx, &redis.XAddArgs{
 		Stream: "messages:processed",
-		ID:     msgJson["message_id"],
+		ID:     "*",
 		Values: msgJson,
 	}).Err()
 	if err != nil {

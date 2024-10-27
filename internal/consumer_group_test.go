@@ -31,7 +31,8 @@ var (
 )
 
 func publishAndAssertProcessed(t *testing.T, id string) {
-	err := rdb.Publish(context.Background(), "messages:published", fmt.Sprintf("{\"message_id\":\"%v\"}", id)).Err()
+	ctx := context.Background()
+	err := rdb.Publish(ctx, "messages:published", fmt.Sprintf("{\"message_id\":\"%v\"}", id)).Err()
 	assert.Nil(t, err)
 
 	streams, err := rdb.XRead(context.Background(), &redis.XReadArgs{
@@ -40,8 +41,8 @@ func publishAndAssertProcessed(t *testing.T, id string) {
 		Block:   1 * time.Second,
 		ID:      lastId,
 	}).Result()
-	lastId = id
 	assert.Nil(t, err)
+	lastId = streams[0].Messages[0].ID
 	values := streams[0].Messages[0].Values
 	assert.Equal(t, id, values["message_id"])
 	assert.True(t, slices.Contains(uuids, values["consumer_id"].(string)))
@@ -56,16 +57,17 @@ func assertConsumerIds(t *testing.T, uuids []string) {
 }
 
 func TestRunConsumerGroup(t *testing.T) {
+	uuid.SetRand(nil)
 	assertConsumerIds(t, uuids)
 	ticker <- time.Now()
-	publishAndAssertProcessed(t, "1")
-	publishAndAssertProcessed(t, "2")
+	publishAndAssertProcessed(t, uuid.New().String())
+	publishAndAssertProcessed(t, uuid.New().String())
 	ticker <- time.Now()
 	unixMilli += 1
-	publishAndAssertProcessed(t, "3")
+	publishAndAssertProcessed(t, uuid.New().String())
 	ticker <- time.Now()
 	unixMilli += 990
-	publishAndAssertProcessed(t, "4")
+	publishAndAssertProcessed(t, uuid.New().String())
 	ticker <- time.Now()
 	unixMilli += 10
 	ticker <- time.Now()
