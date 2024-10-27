@@ -125,7 +125,7 @@ func TestMain(m *testing.M) {
 	// run the consumer group
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	cleanState = runConsumerGroup(ctx, 3, testRedis.Addr(), clock)
+	cleanState = runConsumerGroup(ctx, 3, testRedis.Addr(), clock, ProcessMessage)
 
 	m.Run()
 }

@@ -2,7 +2,6 @@ package internal
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"os"
@@ -32,33 +31,9 @@ func printCounterEvery(ctx context.Context, counter *Counter, duration time.Dura
 	}
 }
 
-func consume(ctx context.Context, rdb *redis.Client, id string, messages <-chan *redis.Message, counter *Counter) {
-	logInfo.Printf("Starting consumer with id %v.\n", id)
+type MessageProcessor func(ctx context.Context, rdb *redis.Client, consumerId string, msg *redis.Message) error
 
-	for msg := range messages {
-		msgJson := make(map[string]string)
-		err := json.Unmarshal([]byte(msg.Payload), &msgJson)
-		if err != nil {
-			logError.Printf("Unable to parse json %v : %v\n", msg.Payload, err)
-			continue
-		}
-		msgJson["consumer_id"] = id
-
-		err = rdb.XAdd(ctx, &redis.XAddArgs{
-			Stream: "messages:processed",
-			ID:     msgJson["message_id"],
-			Values: msgJson,
-		}).Err()
-		if err != nil {
-			logError.Printf("Failed to add processed message : %v", err)
-			continue
-		} else {
-			counter.Increment()
-		}
-	}
-}
-
-func runConsumerGroup(ctx context.Context, n int, redisAddr string, clock *clock) func() error {
+func runConsumerGroup(ctx context.Context, n int, redisAddr string, clock *clock, process MessageProcessor) func() error {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 	})
@@ -67,16 +42,26 @@ func runConsumerGroup(ctx context.Context, n int, redisAddr string, clock *clock
 	go printCounterEvery(ctx, counter, 3*time.Second, clock)
 
 	ids := NewIds(rdb)
-
 	messages := rdb.Subscribe(ctx, "messages:published").Channel()
+
 	for i := 0; i < n; i++ {
-		id, err := ids.Next(ctx)
+		consumerId, err := ids.Next(ctx)
 		if err != nil {
 			logError.Printf("Unable to get id for consumer %v : %v\n", i, err)
 			continue
 		}
 
-		go consume(ctx, rdb, id, messages, counter)
+		go func() {
+			logInfo.Printf("Starting consumer with id %v.\n", consumerId)
+			for msg := range messages {
+				err := process(ctx, rdb, consumerId, msg)
+				if err != nil {
+					logError.Printf("%v", err)
+				} else {
+					counter.Increment()
+				}
+			}
+		}()
 	}
 
 	return ids.Clear
@@ -84,10 +69,10 @@ func runConsumerGroup(ctx context.Context, n int, redisAddr string, clock *clock
 
 // RunConsumerGroup - Runs a consumer group of n consumers.
 // Returns a function that has to be called to clean the state of the consumer group when the program is terminated.
-func RunConsumerGroup(ctx context.Context, n int, redisAddr string) func() error {
+func RunConsumerGroup(ctx context.Context, n int, redisAddr string, process MessageProcessor) func() error {
 	return runConsumerGroup(ctx, n, redisAddr, &clock{
 		unixMillis: func() int64 { return time.Now().UnixMilli() },
 		newTicker: func(duration time.Duration) <-chan time.Time {
 			return time.NewTicker(duration).C
-		}})
+		}}, process)
 }

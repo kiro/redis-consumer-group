@@ -14,7 +14,7 @@ func main() {
 	consumers := flag.Int("consumers", 3, "Number of consumers")
 	flag.Parse()
 	ctx, cancel := context.WithCancel(context.Background())
-	cleanConsumerGroupState := internal.RunConsumerGroup(ctx, *consumers, *redisAddr)
+	cleanConsumerGroupState := internal.RunConsumerGroup(ctx, *consumers, *redisAddr, internal.ProcessMessage)
 
 	// clean the customer ids when the program gets terminated
 	c := make(chan os.Signal, 1)
