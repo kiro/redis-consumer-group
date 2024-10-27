@@ -57,6 +57,12 @@ func runConsumerGroup(ctx context.Context, n int, redisAddr string, clock *clock
 				err := process(ctx, rdb, consumerId, msg)
 				if err != nil {
 					logError.Printf("%v", err)
+					// if the context is cancelled stop the consumer
+					select {
+					case <-ctx.Done():
+						return
+					default:
+					}
 				} else {
 					counter.Increment()
 				}
@@ -71,7 +77,8 @@ func runConsumerGroup(ctx context.Context, n int, redisAddr string, clock *clock
 }
 
 // RunConsumerGroup - Runs a consumer group of n consumers.
-// Returns a function that has to be called to clean the state of the consumer group when the program is terminated.
+// Returns a function that has to be called to clean the state of the consumer group when the program is terminated
+// or the consumer group is stopped.
 func RunConsumerGroup(ctx context.Context, n int, redisAddr string, process MessageProcessor) func() error {
 	return runConsumerGroup(ctx, n, redisAddr, &clock{
 		unixMillis: func() int64 { return time.Now().UnixMilli() },

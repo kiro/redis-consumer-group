@@ -11,6 +11,14 @@ type bucket struct {
 	count     int
 }
 
+// Counter - thread safe counter over that last second
+//
+// It maintains buckets with count for every millisecond in the last second.
+// The buckets older than a second are removed on every operation and
+// a total counter is maintained.
+// The number of buckets is selected so the counter is precise up to a millisecond,
+// and it's not too expensive to do the operations up to O(1000), but if it's continuously
+// incremented it will be O(1).
 type Counter struct {
 	buckets   []bucket
 	total     int
@@ -18,13 +26,7 @@ type Counter struct {
 	unixMilli func() int64
 }
 
-// NewCounter - creates counter over the last second.
-//
-// It maintains buckets with count for every millisecond in the last second.
-// The buckets older than a second are removed on every operation and
-// a total counter is maintained.
-// The number of buckets is selected so the counter is precise up to a millisecond,
-// and it's not too expensive to do the operations up to O(1000) .
+// NewCounter - creates counter over the last second which uses the unixMilli function to get the time.
 func NewCounter(unixMilli func() int64) *Counter {
 	return &Counter{[]bucket{}, 0, &sync.Mutex{}, unixMilli}
 }

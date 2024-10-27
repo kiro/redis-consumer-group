@@ -7,6 +7,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// ProcessMessage - parses a json message, adds consumerId as a field and adds it to a processed stream
 func ProcessMessage(ctx context.Context, rdb *redis.Client, consumerId string, msg *redis.Message) error {
 	msgJson := make(map[string]string)
 	err := json.Unmarshal([]byte(msg.Payload), &msgJson)

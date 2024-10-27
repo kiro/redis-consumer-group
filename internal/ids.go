@@ -13,7 +13,7 @@ type Ids struct {
 	rdb *redis.Client
 }
 
-// NewIds - constructs new ids generator that keeps list of ids redis
+// NewIds - constructs new ids generator that maintains list of ids redis
 func NewIds(rdb *redis.Client) *Ids {
 	return &Ids{rdb}
 }

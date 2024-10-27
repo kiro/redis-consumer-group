@@ -1,31 +1,45 @@
+# Redis consumer group
 
+## /internal - Just put everything in internal as there is no need to reuse the code for this exercise
 
-^CSun Oct 27 17:02:48 ~/GolandProjects/redis-task $ ./consumer-group --consumers=1
-INFO 2024/10/27 17:02:57 consumer_group.go:55: Starting consumer with id 03dc958a-d1ee-42cb-86e8-2fab8837e5ff.
-INFO 2024/10/27 17:03:00 consumer_group.go:27: Processed 0 messages in the last second.
-INFO 2024/10/27 17:03:03 consumer_group.go:27: Processed 0 messages in the last second.
-INFO 2024/10/27 17:03:06 consumer_group.go:27: Processed 0 messages in the last second.
-INFO 2024/10/27 17:03:09 consumer_group.go:27: Processed 19033 messages in the last second.
-INFO 2024/10/27 17:03:12 consumer_group.go:27: Processed 17749 messages in the last second.
-INFO 2024/10/27 17:03:15 consumer_group.go:27: Processed 18821 messages in the last second.
+ids.go - maintains the list of consumer ids in consumer:ids list in redis. When requesting new id it adds it to the list
+and has a method to clear the list.
 
-Sun Oct 27 16:59:55 ~/GolandProjects/redis-task $ ./consumer-group --consumers=3
-INFO 2024/10/27 17:01:33 consumer_group.go:55: Starting consumer with id 8ed98595-877a-46ee-a4c9-ef7cf136840a.
-INFO 2024/10/27 17:01:33 consumer_group.go:55: Starting consumer with id b9101f8a-88b5-4b4b-a939-dd5622bd0098.
-INFO 2024/10/27 17:01:33 consumer_group.go:55: Starting consumer with id 1d574926-8779-4ad3-aa27-4f5d4ee41f2c.
-INFO 2024/10/27 17:01:36 consumer_group.go:27: Processed 32042 messages in the last second.
-INFO 2024/10/27 17:01:39 consumer_group.go:27: Processed 22161 messages in the last second.
-INFO 2024/10/27 17:01:42 consumer_group.go:27: Processed 23434 messages in the last second.
+counter.go - thread safe counter over the last second. It maintains a bucket with count for each millisecond and total
+count and expires the buckets and updates the total as time progresses. Complexity O(1) for all operations, sometimes
+bigger constant depending on how often the counter is updated and the value is requested.
 
-Sun Oct 27 17:03:57 ~/GolandProjects/redis-task $ ./consumer-group --consumers=6
-INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id c864c5e8-ed17-44d2-bc7d-d456d8090ce9.
-INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id 9954e7c4-2efc-453b-a90f-011cfb4963e3.
-INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id 2814cfe4-8477-417f-bfc7-f84c231573dc.
-INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id ce4397de-18cb-44d2-8cc3-62366773d29b.
-INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id a1295f3d-65d3-46f4-b19b-07a1a057b0a8.
-INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id c00a9265-aaff-41bf-9c39-0e75e7a68a4e.
-INFO 2024/10/27 17:04:09 consumer_group.go:27: Processed 0 messages in the last second.
-INFO 2024/10/27 17:04:12 consumer_group.go:27: Processed 0 messages in the last second.
-INFO 2024/10/27 17:04:15 consumer_group.go:27: Processed 11502 messages in the last second.
-INFO 2024/10/27 17:04:18 consumer_group.go:27: Processed 61283 messages in the last second.
-INFO 2024/10/27 17:04:21 consumer_group.go:27: Processed 45326 messages in the last second.
+process_message.go - function to read message from pubsub channel, add consumer id field and publish it to processed
+stream
+
+consumer_group.go - subscribes to pubsub "messages:published", runs n goroutines reading from the channel of the
+subscription (which guarantees each message will be processed once). Requests the ids for each goroutine and keeps them
+in redis and returns a function to clear the state. The consumer group takes a process message function so it can be
+reusable if it needs to. It updates the counter as it reads messages and prints it every 3 second. When the passed
+context is cancelled everything stops.
+
+consumer_group_test.go and ids_test.go has functional test using miniredis and mocking out time, logs, etc.
+There is a unit test for counter_test.go . To run tests in the root folder of the project
+
+``` go test ./... ```
+
+To test if the increasing the consumers increases the throughput I changed the publisher to send 80K msg in a batch and
+run a bit longer. The results look like
+
+1 consumer - up to 18000 msgs/s
+2 consumers - up to 30000 msgs/s
+4 consumers - up to 50000 msgs/s
+8 consumers - up to 65000 msgs/s
+
+## /cmd/redis-consumer-group
+
+Executable for the consumer group, has flags --redis-addr by default localhost:6379 and --consumers by default 3 . It
+catches when the binary is interrupted with ctrl+C and clears the consumerIds in redis.
+
+To build and run the binary, in the root folder of the project
+
+```
+go build ./cmd/redis-consumer-group
+./redis-consumer-group --consumers=4
+```
+
