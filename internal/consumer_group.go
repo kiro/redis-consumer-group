@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	logInfo  = log.New(os.Stdout, "INFO ", log.Llongfile|log.Ldate|log.Ltime)
-	logError = log.New(os.Stderr, "ERROR ", log.Llongfile|log.Ldate|log.Ltime)
+	logInfo  = log.New(os.Stdout, "INFO ", log.Lshortfile|log.Ldate|log.Ltime)
+	logError = log.New(os.Stderr, "ERROR ", log.Lshortfile|log.Ldate|log.Ltime)
 )
 
 // clock interface with fake time
@@ -64,7 +64,10 @@ func runConsumerGroup(ctx context.Context, n int, redisAddr string, clock *clock
 		}()
 	}
 
-	return ids.Clear
+	return func() error {
+		logInfo.Println("Clearing consumer group state.")
+		return ids.Clear()
+	}
 }
 
 // RunConsumerGroup - Runs a consumer group of n consumers.

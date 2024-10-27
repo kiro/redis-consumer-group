@@ -85,6 +85,7 @@ INFO Processed 2 messages in the last second.
 INFO Processed 3 messages in the last second.
 INFO Processed 2 messages in the last second.
 INFO Processed 2 messages in the last second.
+INFO Clearing consumer group state.
 `, stdout.String())
 
 	assert.Equal(t, "", stderr.String())

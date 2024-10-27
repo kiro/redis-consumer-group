@@ -1,0 +1,31 @@
+
+
+^CSun Oct 27 17:02:48 ~/GolandProjects/redis-task $ ./consumer-group --consumers=1
+INFO 2024/10/27 17:02:57 consumer_group.go:55: Starting consumer with id 03dc958a-d1ee-42cb-86e8-2fab8837e5ff.
+INFO 2024/10/27 17:03:00 consumer_group.go:27: Processed 0 messages in the last second.
+INFO 2024/10/27 17:03:03 consumer_group.go:27: Processed 0 messages in the last second.
+INFO 2024/10/27 17:03:06 consumer_group.go:27: Processed 0 messages in the last second.
+INFO 2024/10/27 17:03:09 consumer_group.go:27: Processed 19033 messages in the last second.
+INFO 2024/10/27 17:03:12 consumer_group.go:27: Processed 17749 messages in the last second.
+INFO 2024/10/27 17:03:15 consumer_group.go:27: Processed 18821 messages in the last second.
+
+Sun Oct 27 16:59:55 ~/GolandProjects/redis-task $ ./consumer-group --consumers=3
+INFO 2024/10/27 17:01:33 consumer_group.go:55: Starting consumer with id 8ed98595-877a-46ee-a4c9-ef7cf136840a.
+INFO 2024/10/27 17:01:33 consumer_group.go:55: Starting consumer with id b9101f8a-88b5-4b4b-a939-dd5622bd0098.
+INFO 2024/10/27 17:01:33 consumer_group.go:55: Starting consumer with id 1d574926-8779-4ad3-aa27-4f5d4ee41f2c.
+INFO 2024/10/27 17:01:36 consumer_group.go:27: Processed 32042 messages in the last second.
+INFO 2024/10/27 17:01:39 consumer_group.go:27: Processed 22161 messages in the last second.
+INFO 2024/10/27 17:01:42 consumer_group.go:27: Processed 23434 messages in the last second.
+
+Sun Oct 27 17:03:57 ~/GolandProjects/redis-task $ ./consumer-group --consumers=6
+INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id c864c5e8-ed17-44d2-bc7d-d456d8090ce9.
+INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id 9954e7c4-2efc-453b-a90f-011cfb4963e3.
+INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id 2814cfe4-8477-417f-bfc7-f84c231573dc.
+INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id ce4397de-18cb-44d2-8cc3-62366773d29b.
+INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id a1295f3d-65d3-46f4-b19b-07a1a057b0a8.
+INFO 2024/10/27 17:04:06 consumer_group.go:55: Starting consumer with id c00a9265-aaff-41bf-9c39-0e75e7a68a4e.
+INFO 2024/10/27 17:04:09 consumer_group.go:27: Processed 0 messages in the last second.
+INFO 2024/10/27 17:04:12 consumer_group.go:27: Processed 0 messages in the last second.
+INFO 2024/10/27 17:04:15 consumer_group.go:27: Processed 11502 messages in the last second.
+INFO 2024/10/27 17:04:18 consumer_group.go:27: Processed 61283 messages in the last second.
+INFO 2024/10/27 17:04:21 consumer_group.go:27: Processed 45326 messages in the last second.
