@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"redis/internal"
@@ -13,15 +14,16 @@ func main() {
 	consumers := flag.Int("consumers", 3, "Number of consumers")
 	flag.Parse()
 	ctx, cancel := context.WithCancel(context.Background())
-	cleanState := internal.RunConsumerGroup(ctx, *consumers, *redisAddr)
+	cleanConsumerGroupState := internal.RunConsumerGroup(ctx, *consumers, *redisAddr)
 
-	// clean the customer ids on control C
+	// clean the customer ids when the program gets terminated
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		<-c
 		cancel()
-		cleanState()
+		err := cleanConsumerGroupState()
+		log.Fatal(err)
 		os.Exit(1)
 	}()
 }

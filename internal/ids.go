@@ -8,6 +8,7 @@ import (
 
 const consumerIds = "consumer:ids"
 
+// Ids - Maintains the list of ids of the running consumers.
 type Ids struct {
 	rdb *redis.Client
 }
@@ -22,12 +23,6 @@ func (ids *Ids) Next(ctx context.Context) (string, error) {
 	return id, err
 }
 
-func (ids *Ids) Clear(ctx context.Context) {
-	<-ctx.Done()
-	err := ids.rdb.Del(ctx, consumerIds).Err()
-	if err != nil {
-		ERROR.Printf("Error deleting redis list %v : %v\n", consumerIds, err)
-	} else {
-		INFO.Printf("Cleaned up redis list %v\n", consumerIds)
-	}
+func (ids *Ids) Clear() error {
+	return ids.rdb.Del(context.Background(), consumerIds).Err()
 }

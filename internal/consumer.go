@@ -3,37 +3,43 @@ package internal
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/redis/go-redis/v9"
+	"log"
+	"os"
 	"time"
 )
 
-func printCounterEvery(ctx context.Context, counter *Counter, duration time.Duration) {
-	timer := time.NewTimer(duration)
+var (
+	logInfo  = log.New(os.Stdout, "INFO ", log.Llongfile|log.Ldate|log.Ltime)
+	logError = log.New(os.Stderr, "ERROR ", log.Llongfile|log.Ldate|log.Ltime)
+)
 
+// clock interface with fake time
+type clock struct {
+	unixMillis func() int64
+	newTicker  func(duration time.Duration) <-chan time.Time
+}
+
+func printCounterEvery(ctx context.Context, counter *Counter, duration time.Duration, clock *clock) {
+	ticker := clock.newTicker(duration)
 	for {
 		select {
-		case <-timer.C:
-			fmt.Printf("Processed %v messages", counter.Get())
+		case <-ticker:
+			logInfo.Printf("Processed %v messages in the last second.\n", counter.Get())
 		case <-ctx.Done():
-			timer.Stop()
 			break
 		}
 	}
 }
 
-func consumer(ctx context.Context, rdb *redis.Client, id string, messages <-chan *redis.Message) {
-	INFO.Printf("Starting consumer with id %v\n", id)
+func consume(ctx context.Context, rdb *redis.Client, id string, messages <-chan *redis.Message, counter *Counter) {
+	logInfo.Printf("Starting consumer with id %v.\n", id)
 
-	for {
-		msg, ok := <-messages
-		if !ok {
-			break
-		}
+	for msg := range messages {
 		msgJson := make(map[string]string)
 		err := json.Unmarshal([]byte(msg.Payload), &msgJson)
 		if err != nil {
-			ERROR.Printf("Error unmarshalling json %v : %v\n", err, msg.Payload)
+			logError.Printf("Unable to parse json %v : %v\n", msg.Payload, err)
 			continue
 		}
 		msgJson["consumer_id"] = id
@@ -44,22 +50,21 @@ func consumer(ctx context.Context, rdb *redis.Client, id string, messages <-chan
 			Values: msgJson,
 		}).Err()
 		if err != nil {
-			ERROR.Printf("Error adding processed message : %v", err)
+			logError.Printf("Failed to add processed message : %v", err)
 			continue
+		} else {
+			counter.Increment()
 		}
 	}
 }
 
-// Runs a consumer group of n consumers.
-func RunConsumerGroup(ctx context.Context, n int, redisAddr string) func() {
+func runConsumerGroup(ctx context.Context, n int, redisAddr string, clock *clock) func() error {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Password: "",
-		DB:       0,
+		Addr: redisAddr,
 	})
 
-	counter := NewCounter()
-	go printCounterEvery(ctx, counter, 3*time.Second)
+	counter := NewCounter(clock.unixMillis)
+	go printCounterEvery(ctx, counter, 3*time.Second, clock)
 
 	ids := NewIds(rdb)
 
@@ -67,12 +72,22 @@ func RunConsumerGroup(ctx context.Context, n int, redisAddr string) func() {
 	for i := 0; i < n; i++ {
 		id, err := ids.Next(ctx)
 		if err != nil {
-			ERROR.Printf("Unable to get id for consumer %v : %v\n", i, err)
+			logError.Printf("Unable to get id for consumer %v : %v\n", i, err)
 			continue
 		}
 
-		go consumer(ctx, rdb, id, messages)
+		go consume(ctx, rdb, id, messages, counter)
 	}
 
-	return func() { ids.Clear(ctx) }
+	return ids.Clear
+}
+
+// RunConsumerGroup - Runs a consumer group of n consumers.
+// Returns a function that has to be called to clean the state of the consumer group when the program is terminated.
+func RunConsumerGroup(ctx context.Context, n int, redisAddr string) func() error {
+	return runConsumerGroup(ctx, n, redisAddr, &clock{
+		unixMillis: func() int64 { return time.Now().UnixMilli() },
+		newTicker: func(duration time.Duration) <-chan time.Time {
+			return time.NewTicker(duration).C
+		}})
 }
