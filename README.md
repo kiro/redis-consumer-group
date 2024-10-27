@@ -4,23 +4,23 @@
 
 Just put everything in internal as there is no need to reuse the code for this exercise
 
-ids.go - maintains the list of consumer ids in consumer:ids list in redis. When requesting new id it adds it to the list
+- ids.go - maintains the list of consumer ids in consumer:ids list in redis. When requesting new id it adds it to the list
 and has a method to clear the list.
 
-counter.go - thread safe counter over the last second. It maintains a bucket with count for each millisecond and total
+- counter.go - thread safe counter over the last second. It maintains a bucket with count for each millisecond and total
 count and expires the buckets and updates the total as time progresses. Complexity O(1) for all operations, sometimes
 bigger constant depending on how often the counter is updated and the value is requested.
 
-process_message.go - function to read message from pubsub channel, add consumer id field and publish it to processed
+- process_message.go - function to read message from pubsub channel, add consumer id field and publish it to processed
 stream
 
-consumer_group.go - subscribes to pubsub "messages:published", runs n goroutines reading from the channel of the
+- consumer_group.go - subscribes to pubsub "messages:published", runs n goroutines reading from the channel of the
 subscription (which guarantees each message will be processed once). Requests the ids for each goroutine and keeps them
 in redis and returns a function to clear the state. The consumer group takes a process message function so it can be
 reusable if it needs to. It updates the counter as it reads messages and prints it every 3 second. When the passed
 context is cancelled everything stops.
 
-consumer_group_test.go and ids_test.go has functional test using miniredis and mocking out time, logs, etc.
+- consumer_group_test.go and ids_test.go has functional test using miniredis and mocking out time, logs, etc.
 There is a unit test for counter_test.go . To run tests in the root folder of the project
 
 ``` go test ./... ```
