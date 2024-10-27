@@ -48,3 +48,10 @@ go build ./cmd/redis-consumer-group
 ./redis-consumer-group --consumers=4
 ```
 
+## Task 4
+1. Tests are provided
+2. It looks like we can run redis cluster. Have sharded pub/sub for the published messages with topics like
+messages:published:0, messages:published:1 ... .  The publisher can do a round robin on the topics and publish on each 
+or we can have a publisher per topic. We can have a consumer group instance running for each sharded pub/sub topic and 
+publish in stream like messages:processed:0 ... . 
+3. Consumer groups already exist for redis streams, so that can be used instead.
