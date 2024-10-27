@@ -21,10 +21,7 @@ reusable if it needs to. It updates the counter as it reads messages and prints 
 context is cancelled everything stops.
 
 - consumer_group_test.go and ids_test.go has functional test using miniredis and mocking out time, logs, etc.
-There is a unit test for counter_test.go . To run tests in the root folder of the project
-``` 
-go test ./...
- ```
+There is a unit test for counter_test.go .
 
 To test if increasing the consumers increases the throughput I changed the publisher to send 80K msg in a batch and
 run a bit longer. The results look like
@@ -44,6 +41,7 @@ To get the project and run the binary
 ```
 git clone https://github.com/kiro/redis-consumer-group
 cd redis-consumer-group
+go test ./...
 go build ./cmd/redis-consumer-group
 ./redis-consumer-group --consumers=4
 ```
