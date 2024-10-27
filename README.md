@@ -9,7 +9,7 @@ and has a method to clear the list.
 
 - counter.go - thread safe counter over the last second. It maintains a bucket with count for each millisecond and total
 count and expires the buckets and updates the total as time progresses. Complexity O(1) for all operations, sometimes
-bigger constant depending on how often the counter is updated and the value is requested.
+bigger constant depending on how often the counter is updated.
 
 - process_message.go - function to read message from pubsub channel, add consumer id field and publish it to processed
 stream
