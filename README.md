@@ -26,7 +26,7 @@ There is a unit test for counter_test.go . To run tests in the root folder of th
 go test ./...
  ```
 
-To test if the increasing the consumers increases the throughput I changed the publisher to send 80K msg in a batch and
+To test if increasing the consumers increases the throughput I changed the publisher to send 80K msg in a batch and
 run a bit longer. The results look like
 
 - 1 consumer - up to 18000 msgs/s
