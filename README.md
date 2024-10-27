@@ -1,6 +1,8 @@
 # Redis consumer group
 
-## /internal - Just put everything in internal as there is no need to reuse the code for this exercise
+## /internal
+
+Just put everything in internal as there is no need to reuse the code for this exercise
 
 ids.go - maintains the list of consumer ids in consumer:ids list in redis. When requesting new id it adds it to the list
 and has a method to clear the list.
@@ -26,10 +28,10 @@ There is a unit test for counter_test.go . To run tests in the root folder of th
 To test if the increasing the consumers increases the throughput I changed the publisher to send 80K msg in a batch and
 run a bit longer. The results look like
 
-1 consumer - up to 18000 msgs/s
-2 consumers - up to 30000 msgs/s
-4 consumers - up to 50000 msgs/s
-8 consumers - up to 65000 msgs/s
+- 1 consumer - up to 18000 msgs/s
+- 2 consumers - up to 30000 msgs/s
+- 4 consumers - up to 50000 msgs/s
+- 8 consumers - up to 65000 msgs/s
 
 ## /cmd/redis-consumer-group
 
